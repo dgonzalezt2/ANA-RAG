@@ -1,0 +1,10 @@
+fecha,cultivo,produccion,clima,insumo
+2024-01-01,cafe,1000,lluvioso,normal
+2024-02-01,cafe,950,lluvioso,escaso
+2024-03-01,cafe,820,sequía,escaso
+2024-01-01,maiz,1200,templado,normal
+2024-02-01,maiz,1100,templado,escaso
+2024-03-01,maiz,950,caluroso,escaso
+2024-01-01,flores,1500,templado,normal
+2024-02-01,flores,1480,templado,normal
+2024-03-01,flores,1300,lluvioso,escaso
