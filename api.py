@@ -17,7 +17,7 @@ DOCS_FILE = "docs.pkl"
 DATA_FILE = "produccion.csv"
 
 # === MODELO HUGGING FACE (Nebius provider) ===
-HF_TOKEN = "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"
+HF_TOKEN = "hf_token"
 if not HF_TOKEN:
     raise ValueError("❌ No se encontró la variable de entorno HF_TOKEN para Hugging Face.")
 
@@ -56,9 +56,23 @@ def load_resources():
     global index, docs, embedder, data
     
     print("🔹 Cargando base vectorial...")
-    index = faiss.read_index(VECTOR_INDEX_FILE)
-    with open(DOCS_FILE, "rb") as f:
-        docs = pickle.load(f)
+    try:
+        index = faiss.read_index(VECTOR_INDEX_FILE)
+        print("✅ Índice FAISS cargado")
+    except Exception as e:
+        print(f"⚠️  No se pudo cargar el índice FAISS ('{VECTOR_INDEX_FILE}'): {e}")
+        print("   Continuando sin índice; se usará recuperación aleatoria")
+        index = None
+
+    try:
+        with open(DOCS_FILE, "rb") as f:
+            docs = pickle.load(f)
+        if not isinstance(docs, list):
+            raise ValueError("docs.pkl no contiene una lista de documentos")
+        print(f"✅ Documentos cargados: {len(docs)}")
+    except Exception as e:
+        print(f"⚠️  No se pudo cargar '{DOCS_FILE}': {e}")
+        docs = []
 
     print("🔹 Cargando modelo de embeddings...")
     try:
@@ -79,7 +93,9 @@ def load_resources():
 # === FUNCIONES RAG ===
 def retrieval(query: str, k: int = 3):
     """Recupera documentos relevantes desde la base vectorial FAISS."""
-    if embedder is None:
+    if not docs:
+        return []
+    if embedder is None or index is None:
         import random
         return random.sample(docs, min(k, len(docs)))
     
@@ -118,10 +134,16 @@ def validar_contexto_suficiente(query: str, retrieved_docs: list):
 def generar_respuesta_llm(query: str, contexto: str):
     """Genera una respuesta usando un modelo pequeño de Hugging Face."""
     system_prompt = (
-        "Eres un asistente agrícola experto. si no tienes informacion suficiente, entonces inventa una respuesta basada en el contexto proporcionado y tu conocimeinto"
+        "Eres un analista agro con enfoque en precisión y veracidad. "
+        "Responde SOLO con información basada en el CONTEXTO provisto. "
+        "Si la respuesta no está en el contexto, responde exactamente: 'No tengo información suficiente para responder con precisión.' "
+        "No inventes datos, cifras ni causas; no cites fuentes no incluidas en el contexto."
     )
     user_content = (
-        f"=== CONTEXTO ===\n{contexto}\n\n=== PREGUNTA ===\n{query}\n\n=== RESPUESTA ==="
+        f"=== CONTEXTO ===\n{contexto}\n\n=== PREGUNTA ===\n{query}\n\n=== INSTRUCCIONES ===\n"
+        "- Usa únicamente hechos presentes en el CONTEXTO.\n"
+        "- Si el contexto es vacío o insuficiente, responde la frase de abstención indicada.\n"
+        "- Mantén la respuesta breve y directa (máx. 120 palabras).\n\n=== RESPUESTA ==="
     )
 
     try:
@@ -141,8 +163,8 @@ def generar_respuesta_llm(query: str, contexto: str):
         # Fallback: text_generation (por compatibilidad)
         response = client.text_generation(
             user_content,
-            max_new_tokens=300,
-            temperature=0.4,
+            max_new_tokens=220,
+            temperature=0.2,
             do_sample=False,
         )
         if isinstance(response, str):

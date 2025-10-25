@@ -6,7 +6,7 @@ import numpy as np
 
 # === CONFIGURACIÓN ===
 # Configurar token de Hugging Face
-os.environ["HF_TOKEN"] = "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"
+os.environ["HF_TOKEN"] = "hf_token"
 # Archivo que contiene los análisis históricos.
 # Puede ser CSV (con columna "analisis") o TXT (una línea por documento)
 INPUT_FILE = "analisis.csv"   # o "analisis.txt"
