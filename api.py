@@ -17,7 +17,7 @@ DOCS_FILE = "docs.pkl"
 DATA_FILE = "produccion.csv"
 
 # === MODELO HUGGING FACE (Nebius provider) ===
-HF_TOKEN = os.getenv("HF_TOKEN")
+HF_TOKEN = "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"
 if not HF_TOKEN:
     raise ValueError("❌ No se encontró la variable de entorno HF_TOKEN para Hugging Face.")
 
